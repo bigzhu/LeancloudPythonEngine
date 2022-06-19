@@ -1,5 +1,7 @@
 # coding: utf-8
 
+import sys
+import json
 from leancloud import Engine
 from leancloud import LeanEngineError
 try:
@@ -14,6 +16,7 @@ except ImportError:
     from httplib import HTTPException
 from youtube_transcript_api import YouTubeTranscriptApi
 from youtube_transcript_api._errors import TranscriptsDisabled, NoTranscriptFound
+from youtubesearchpython import Video, ResultMode
 
 engine = Engine()
 
@@ -47,3 +50,19 @@ def captions(uri, **params):
     for t in transcript.fetch():
         result += f" 00{t['start']}00 {t['text']} ".format(t)
     return result
+
+
+@engine.define
+def videoInfo(uri, **params):
+    '''
+    Getting information about video or its formats using video link or video ID.
+
+    `Video.get` method will give both information & formats of the video
+    `Video.getInfo` method will give only information about the video.
+    `Video.getFormats` method will give only formats of the video.
+
+    You may either pass link or ID, method will take care itself.
+    '''
+
+    videoInfo = Video.getInfo(uri, mode=ResultMode.json)
+    return videoInfo
