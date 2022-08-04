@@ -71,5 +71,5 @@ def videoInfo(uri, **params):
 
 
 @engine.define
-def grab(uri, **params):
+def getContent(uri, **params):
     return grab.getContent(uri, engine)

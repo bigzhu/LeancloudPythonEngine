@@ -16,7 +16,7 @@ except ImportError:
     from httplib import HTTPException
 from youtube_transcript_api import YouTubeTranscriptApi
 from youtube_transcript_api._errors import TranscriptsDisabled, NoTranscriptFound
-from youtubesearchpython import Video, ResultMode
+from youtubesearchpython import Video, Channel, ResultMode
 import spacy
 import re
 nlp = spacy.load("en_core_web_sm")
@@ -130,8 +130,9 @@ def getVideoInfo(uri):
 
     You may either pass link or ID, method will take care itself.
     '''
-
     videoInfo = Video.getInfo(uri, mode=ResultMode.json)
+    channelId = videoInfo['channel']['id']
+    videoInfo['avatar'] = Channel.get(channelId)["thumbnails"][-1]["url"]
     return videoInfo
 
 
@@ -140,8 +141,7 @@ def buildArticle(uri, user, sentences, videoInfo):
     article = Article()
     article.set('owner', user)
     article.set('sentences', sentences)
-    article.set('thumbnail', videoInfo['thumbnails']
-                [len(videoInfo['thumbnails'])-1]['url'])
+    article.set('thumbnail', videoInfo['thumbnails'][-1]['url'])
     article.set('title', videoInfo['title'])
     article.set('channel', videoInfo['channel']['id'])
     article.set('avatar', videoInfo['avatar'])
