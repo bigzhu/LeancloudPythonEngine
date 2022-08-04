@@ -16,13 +16,14 @@ except ImportError:
     from httplib import HTTPException
 from youtube_transcript_api import YouTubeTranscriptApi
 from youtube_transcript_api._errors import TranscriptsDisabled, NoTranscriptFound
-from youtubesearchpython import Video, ResultMode
+from youtubesearchpython import Video, Channel, ResultMode
 
 engine = Engine()
 
 
 @engine.define
 def captions(uri, **params):
+    video_imd = uri
     if uri.startswith('http'):
         queries = dict(parse_qsl(urlparse(uri).query))
 
@@ -32,8 +33,8 @@ def captions(uri, **params):
             video_id = urlparse(uri).path.replace("/", "")
         if video_id is None:
             return "no subtitle"
+        print(f'get video_id={video_id}')
 
-    print(f'get video_id={video_id}')
     transcript_list = YouTubeTranscriptApi.list_transcripts(video_id)
     # filter for manually created transcripts
     langs = ['en', 'en-GB', 'en-US', 'en-CA']
@@ -65,4 +66,6 @@ def videoInfo(uri, **params):
     '''
 
     videoInfo = Video.getInfo(uri, mode=ResultMode.json)
+    channelId = videoInfo['channel']['id']
+    videoInfo['avatar'] = Channel.get(channelId)["thumbnails"][-1]["url"]
     return videoInfo
