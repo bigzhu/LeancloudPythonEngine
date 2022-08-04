@@ -1,5 +1,5 @@
 # coding: utf-8
-
+import grab
 import sys
 import json
 from leancloud import Engine
@@ -63,6 +63,10 @@ def videoInfo(uri, **params):
 
     You may either pass link or ID, method will take care itself.
     '''
-
     videoInfo = Video.getInfo(uri, mode=ResultMode.json)
     return videoInfo
+
+
+@engine.define
+def grab(uri, **params):
+    return grab.getContent(uri, engine)
