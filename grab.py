@@ -1,4 +1,7 @@
 # -*- coding: utf-8 -*-
+from spacy.lang.en import English
+import datetime
+from logging import exception
 import leancloud
 import sys
 import json
@@ -20,6 +23,8 @@ from youtubesearchpython import Video, Channel, ResultMode
 import spacy
 import re
 nlp = spacy.load("en_core_web_sm")
+nlp_simple = English()
+nlp_simple.add_pipe('sentencizer')
 
 
 def captions(uri, **params):
@@ -66,20 +71,16 @@ def mergeToDoc(transcripts):
 
 
 def breakUpToSentences(doc):
-    import spacy
-    from spacy.lang.en import English
-    nlp_simple = English()
     # nlp_simple.add_pipe(nlp_simple.add_pipe('sentencizer'))
-    nlp_simple.add_pipe('sentencizer')
-
     return nlp_simple(doc).sents
 
 
-def breakUpToToken(text):
+def breakUpToToken(sent):
     sentence = {'seekTo': '', 'words': []}
-    doc = nlp(text.text)
+    #doc = nlp(text.text)
+    #tokens = [token.text for token in sent]
     # print(text.text)
-    for token in doc:
+    for token in sent:
         match = re.match("00[0-9]+.[0-9]+00", token.text)
         if(match):
             if (sentence['seekTo'] == ''):
@@ -109,10 +110,15 @@ def getSentences(uri):
     print(transcript_type)
     if(transcript_type == 'manually'):
         doc = mergeToDoc(transcripts)
+        print('end mergeToDoc', datetime.datetime.now())
         doc = format(doc)
-        sentences_text = breakUpToSentences(doc)
-        for s in sentences_text:
-            sentences.append(breakUpToToken(s))
+        print('end format', datetime.datetime.now())
+        sents = nlp_simple(doc).sents
+        print('end breakUpToSentences', datetime.datetime.now())
+        for sent in sents:
+            #sentences.append([token.text for token in sent])
+            sentences.append(breakUpToToken(sent))
+        print('end breakUpToToken', datetime.datetime.now())
     if(transcript_type == 'generated'):
         pass
     if(transcript_type == 'no subtitle'):
@@ -151,13 +157,31 @@ def buildArticle(uri, user, sentences, videoInfo):
 
 
 def getContent(uri, engine):
-    #sentences = getSentences(uri)
-    sentences = []
+    import datetime
+    print('start', datetime.datetime.now())
+
+    query = leancloud.Query('Article')
+    query.equal_to('youtube', uri)
+    try:
+        article = query.first()
+        article.set('sentences', [])
+        return article.dump()
+    except leancloud.errors.LeanCloudError:
+        pass
+
+    print('end exists check', datetime.datetime.now())
+    sentences = getSentences(uri)
+    print('end getSentences', datetime.datetime.now())
+    # sentences = []
     videoInfo = getVideoInfo(uri)
+    print('end getVideoInfo', datetime.datetime.now())
     article = buildArticle(uri, engine.current.user, sentences, videoInfo)
+    article.save()
+    # 删除太大的 sentences
+    article.set('sentences', [])
     return article.dump()
 
 
 if __name__ == "__main__":
     uri = 'https://www.youtube.com/watch?v=MYpcImFEDJg'
-    #youtube.youtube(uri, engine)
+    # youtube.youtube(uri, engine)
